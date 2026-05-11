@@ -1,0 +1,13 @@
+{
+  "name": "The last bug",
+  "prompts": [
+    "Describe the moment the bug fired. Where were you? What did you see?",
+    "What's the first thing you suspected — and was it right?",
+    "How long between 'this is broken' and 'I know why'?",
+    "What signal would have caught this 24 hours earlier?",
+    "What's the gap in our process that let it through?",
+    "Whose name did you almost page — and were you glad you didn't?",
+    "What did the postmortem doc say that the team meeting didn't, or vice versa?",
+    "If you could re-run that day, what one thing would you do differently?"
+  ]
+}

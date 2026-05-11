@@ -1,0 +1,13 @@
+{
+  "name": "What made you laugh",
+  "prompts": [
+    "What's a Slack message you saved this week?",
+    "Describe the last meeting that made you smile — what was the moment?",
+    "What's a commit message in our history that's funnier than it should be?",
+    "What's a typo in production that no one's allowed to fix?",
+    "What's the silliest thing in your bookmarks right now?",
+    "Name a side project you'd build only for the joke of it.",
+    "What's a piece of dev-tools UI that delighted you recently?",
+    "Tell us about a debugging session that ended with you laughing instead of crying."
+  ]
+}

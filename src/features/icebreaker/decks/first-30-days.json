@@ -1,0 +1,15 @@
+{
+  "name": "First 30 days",
+  "prompts": [
+    "What's something you expected to be hard that turned out to be easy?",
+    "What's a tool whose name is unintuitive — and what would you rename it to?",
+    "Who was the first person who made you feel welcome here?",
+    "What's a meeting you sat through where you didn't understand half the acronyms? Which one?",
+    "What surprised you most in your first month?",
+    "What was your day-one impression that turned out to be wrong?",
+    "Which document do you wish someone had handed you on day one?",
+    "What's a small ritual the team has that you've come to like?",
+    "What would you tell yourself the night before you joined?",
+    "What part of the codebase did you click around for an hour before asking for help?"
+  ]
+}
