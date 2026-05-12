@@ -1,6 +1,6 @@
 # Privacy threat model — mesh-icebreaker
 
-This app is *not* anonymous by default. In round-robin mode the whole point is that everyone knows whose turn it is, which means names are visible. Anonymous mode adds limited unlinkability for answers, described below.
+This app is _not_ anonymous by default. In round-robin mode the whole point is that everyone knows whose turn it is, which means names are visible. Anonymous mode adds limited unlinkability for answers, described below.
 
 ## What other peers in the same room can see
 
