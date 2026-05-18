@@ -1,6 +1,9 @@
 export const appConfig = {
   appName: "mesh-icebreaker",
   storagePrefix: "mesh-icebreaker",
+  description:
+    "Curated icebreaker prompt decks with round-robin and anonymous commit-reveal modes. Kickoffs, retros, year-end reviews, conflict resets.",
+  accentHex: "#C97CC9",
   version: __APP_VERSION__,
   commit: __GIT_COMMIT__,
   repositoryUrl: "https://github.com/baditaflorin/mesh-icebreaker",
