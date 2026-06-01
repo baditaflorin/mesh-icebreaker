@@ -342,6 +342,11 @@ body,
   font-weight: 600;
 }
 
+.ice-roster-away {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
 .settings-help {
   font-size: 0.78rem;
   color: var(--muted);

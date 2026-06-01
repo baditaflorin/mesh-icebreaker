@@ -26,6 +26,12 @@ export function Icebreaker({ roomId, peerId, myName, onNameChange }: Props) {
   const [roster, setRoster] = useState<Map<string, RosterEntry>>(new Map());
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [peers, setPeers] = useState(0);
+  // App peerIds currently live in the room, derived from y-webrtc awareness.
+  // The roster Y.Map is durable (never pruned), so a peer who joined and then
+  // left lingers in it forever — without this present-set the round-robin
+  // speaker could land on a ghost and the anonymous reveal would wait forever
+  // for a lock-in that can never come.
+  const [presentIds, setPresentIds] = useState<Set<string>>(() => new Set([peerId]));
   const [draftAnswer, setDraftAnswer] = useState("");
   const [locked, setLocked] = useState(false);
 
@@ -96,17 +102,32 @@ export function Icebreaker({ roomId, peerId, myName, onNameChange }: Props) {
     }
 
     const awareness = room.provider?.awareness;
-    const updatePeerCount = () => {
-      setPeers(awareness ? awareness.getStates().size : 1);
+    // Advertise our durable app peerId through awareness so other peers can
+    // tell which roster entries are actually live right now.
+    awareness?.setLocalStateField("appPeerId", peerId);
+    const updatePresence = () => {
+      if (!awareness) {
+        setPeers(1);
+        setPresentIds(new Set([peerId]));
+        return;
+      }
+      const states = awareness.getStates();
+      setPeers(states.size);
+      const live = new Set<string>([peerId]);
+      states.forEach((s) => {
+        const id = (s as { appPeerId?: string }).appPeerId;
+        if (id) live.add(id);
+      });
+      setPresentIds(live);
     };
-    awareness?.on("change", updatePeerCount);
-    updatePeerCount();
+    awareness?.on("change", updatePresence);
+    updatePresence();
 
     return () => {
       yState.unobserve(refreshState);
       yRoster.unobserve(refreshRoster);
       yAnswers.unobserve(refreshAnswers);
-      awareness?.off("change", updatePeerCount);
+      awareness?.off("change", updatePresence);
     };
   }, [room, peerId, myName]);
 
@@ -181,13 +202,20 @@ export function Icebreaker({ roomId, peerId, myName, onNameChange }: Props) {
   const promptIdx = state.promptIndex % Math.max(1, deck.prompts.length);
   const prompt = deck.prompts[promptIdx] ?? "(no prompts in this deck)";
 
-  // Round-robin speaker
+  // Round-robin speaker. The full roster is kept for the roster list, but the
+  // speaker rotation and the anonymous reveal gate run over only the *present*
+  // peers — a peer who left lingers in the durable roster Y.Map but must not
+  // hold a speaking slot or block the reveal that waits on everyone locking in.
   const rosterByOrder = useMemo(() => {
     return Array.from(roster.entries())
       .map(([id, v]) => ({ id, ...v }))
       .sort((a, b) => a.order - b.order);
   }, [roster]);
-  const speaker = rosterByOrder[state.promptIndex % Math.max(1, rosterByOrder.length)];
+  const presentByOrder = useMemo(
+    () => rosterByOrder.filter((r) => presentIds.has(r.id)),
+    [rosterByOrder, presentIds],
+  );
+  const speaker = presentByOrder[state.promptIndex % Math.max(1, presentByOrder.length)];
   const lockedInCount = answers.filter((a) => a.promptIdx === state.promptIndex).length;
   const myAnswered = answers.some(
     (a) => a.promptIdx === state.promptIndex && a.answer === draftAnswer.trim() && locked,
@@ -225,7 +253,7 @@ export function Icebreaker({ roomId, peerId, myName, onNameChange }: Props) {
       <div className="ice-hud">
         <span>{peers} phones</span>
         <span>·</span>
-        <span>{rosterByOrder.length} in roster</span>
+        <span>{presentByOrder.length} here</span>
         <span>·</span>
         <span>{deck.name}</span>
         <span>·</span>
@@ -248,7 +276,7 @@ export function Icebreaker({ roomId, peerId, myName, onNameChange }: Props) {
       {state.mode === "anonymous" && (
         <section className="ice-anon">
           <p className="ice-anon-help">
-            Answers stay sealed until everyone locks in. {lockedInCount}/{rosterByOrder.length}{" "}
+            Answers stay sealed until everyone locks in. {lockedInCount}/{presentByOrder.length}{" "}
             locked.
           </p>
           {!myAnswered ? (
@@ -271,7 +299,7 @@ export function Icebreaker({ roomId, peerId, myName, onNameChange }: Props) {
           ) : (
             <p className="ice-locked-msg">You've locked in. Waiting for others…</p>
           )}
-          {lockedInCount >= rosterByOrder.length && rosterByOrder.length > 0 && (
+          {lockedInCount >= presentByOrder.length && presentByOrder.length > 0 && (
             <div className="ice-reveal">
               <h3>All answers</h3>
               <ul>
@@ -318,14 +346,28 @@ export function Icebreaker({ roomId, peerId, myName, onNameChange }: Props) {
         </details>
 
         <details>
-          <summary>Roster ({rosterByOrder.length})</summary>
+          <summary>
+            Roster ({presentByOrder.length} here
+            {rosterByOrder.length > presentByOrder.length
+              ? ` · ${rosterByOrder.length - presentByOrder.length} away`
+              : ""}
+            )
+          </summary>
           <ol className="ice-roster">
-            {rosterByOrder.map((r) => (
-              <li key={r.id} className={r.id === peerId ? "ice-roster-me" : undefined}>
-                {r.name}
-                {r.id === peerId ? " (you)" : ""}
-              </li>
-            ))}
+            {rosterByOrder.map((r) => {
+              const here = presentIds.has(r.id);
+              return (
+                <li
+                  key={r.id}
+                  className={[r.id === peerId ? "ice-roster-me" : "", here ? "" : "ice-roster-away"]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {r.name}
+                  {r.id === peerId ? " (you)" : here ? "" : " (away)"}
+                </li>
+              );
+            })}
           </ol>
         </details>
       </section>
